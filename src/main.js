@@ -9,42 +9,103 @@ Vue.config.productionTip = false
 
 const store = new Vuex.Store({
   state: {
-    counter: 0
+    todos: [
+      {
+        task: 'Code',
+        completed: true,
+        id: uuid.v4()
+      },
+      {
+        task: 'Sleep',
+        completed: false,
+        id: uuid.v4()
+      },
+      {
+        task: 'Eat',
+        completed: false,
+        id: uuid.v4()
+      }
+    ]
   },
   getters: {
-    counter: state => state.counter * 2
-    // counter3: state => state.counter * 3
+    todos: state => state.todos
   },
+  // synchronous
   mutations: {
-    increment: state => state.counter++
+    addTodo: (state, payload) => {
+      const task = {
+        task: payload,
+        completed: false
+      }
+      state.todos.unshift(task)
+    },
+    deleteTodo: (state, payload) => {
+      const index = state.todos.findIndex(t => t.id === payload)
+      // delete from index
+      state.todos.splice(index, 1)
+      console.log(index)
+    },
+    toggleTodo: (state, payload) => {
+      // create new list of array
+      state.todos = state.todos.map((t) => {
+        if (t.id === payload) {
+          // new array
+          return { task: t.task, completed: !t.completed, id: t.id }
+        }
+        return t
+      })
+    }
   }
 })
+
 /* eslint-disable no-new */
+
+const TodoList = {
+  props: ['todos'],
+  template: `
+    <div>
+      <ul>
+        <li v-for="t in todos" :class="{completed: t.completed}" @click="toggleTodo(t.id)" @dblclick="deleteTodo(t.id)">{{t.task}}</li>
+      </ul>
+    </div>
+    `,
+  methods: {
+    toggleTodo (id) {
+      this.$store.commit('toggleTodo', id)
+    },
+    deleteTodo (id) {
+      console.log(id)
+      this.$store.commit('deleteTodo', id)
+    }
+  }
+}
+
 new Vue({
   el: '#app',
   template: `
     <div>
-        <p class="counter">{{ counter }}</p>
-        <div class="actions">
-            <div class="actions-inner">
-                <button @click="increment"> + </button>
-            </div>
-        </div>
+      <form @submit.prevent="addTodo">
+        <input type="text" v-model="task" />
+      </form>
+      <todo-list :todos="todos"></todo-list>
     </div>
   `,
+  data: () => ({
+    task: ''
+  }),
   store,
-  /** log instance */
-  /* created () {
-    console.log(this)
-  } */
+  components: {
+    'todo-list': TodoList
+  },
   computed: {
-    counter: function () {
-      return this.$store.getters.counter
+    todos () {
+      return this.$store.getters.todos
     }
   },
   methods: {
-    increment () {
-      this.$store.commit('increment')
+    addTodo () {
+      this.$store.commit('addTodo', this.task)
+      this.task = ''
     }
   }
 })
